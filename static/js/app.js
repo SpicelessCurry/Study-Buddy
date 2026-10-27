@@ -415,9 +415,13 @@ async function checkAppConfiguration() {
         AppState.isConfigured = !!data.configured;
 
         if (data.configured) {
-            updateSidebarProviderDisplay(data.provider || 'Ready');
+            // Already configured: keep setup modal hidden and open directly to workspace
+            hideSetupModal();
+            const activeProvider = data.active_provider || data.provider || 'Ready';
+            updateSidebarProviderDisplay(activeProvider);
             loadConversations();
         } else {
+            // First time running: show setup modal
             showSetupModal();
         }
     } catch (err) {
@@ -453,6 +457,16 @@ function toggleProviderFields(provider, modalType) {
         apiKeyGroup.classList.remove('hidden');
         ollamaGroup.classList.add('hidden');
         llamaCppGroup.classList.add('hidden');
+
+        // Dynamic placeholder if API key is already configured
+        const apiKeyInput = document.getElementById(`${prefix}ApiKeyInput`);
+        if (apiKeyInput) {
+            if (modalType === 'settings' && AppState.apiKeys && AppState.apiKeys[provider]) {
+                apiKeyInput.placeholder = `Key saved (${AppState.apiKeys[provider]}) - leave blank to keep`;
+            } else {
+                apiKeyInput.placeholder = `Enter your ${formatProviderName(provider)} API key`;
+            }
+        }
     }
 }
 
@@ -539,6 +553,7 @@ async function showSettingsModal() {
         const response = await fetch('/api/config/settings');
         if (response.ok) {
             const data = await response.json();
+            AppState.apiKeys = data.api_keys || {};
             const currentProvider = data.current_provider || data.provider || 'gemini';
             const label = document.getElementById('settingsActiveProviderLabel');
             if (label) label.textContent = formatProviderName(currentProvider);
@@ -548,6 +563,9 @@ async function showSettingsModal() {
                 select.value = currentProvider;
                 toggleProviderFields(currentProvider, 'settings');
             }
+
+            const apiKeyInput = document.getElementById('settingsApiKeyInput');
+            if (apiKeyInput) apiKeyInput.value = '';
 
             if (data.ollama_base_url) {
                 const ollamaBase = document.getElementById('settingsOllamaBaseUrl');

@@ -121,6 +121,7 @@ def config_status():
     return jsonify({
         "configured": configured,
         "active_provider": active,
+        "provider": active,
     })
 
 
