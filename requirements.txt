@@ -1,0 +1,26 @@
+flask
+flask-socketio
+chromadb
+sentence-transformers
+openai
+google-generativeai
+anthropic
+ollama
+--extra-index-url https://abetlen.github.io/llama-cpp-python/whl/cpu
+llama-cpp-python
+pyinstaller
+pypdf2
+pdfplumber
+fpdf2
+beautifulsoup4
+lxml
+python-dotenv
+markdown
+bleach
+tiktoken
+chardet
+ebooklib
+python-docx
+striprtf
+gevent
+gevent-websocket

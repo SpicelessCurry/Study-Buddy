@@ -1,0 +1,534 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Study Buddy - AI Study Assistant</title>
+    <!-- Google Fonts: Inter -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <!-- Font Awesome 6 -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <!-- Highlight.js CSS for Dark Theme -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.8.0/styles/atom-one-dark.min.css">
+    <!-- App CSS -->
+    <link rel="stylesheet" href="/static/css/style.css">
+</head>
+<body>
+    <div class="app-layout">
+        <!-- Sidebar Overlay (Mobile) -->
+        <div id="sidebarOverlay" class="sidebar-overlay"></div>
+
+        <!-- Left Sidebar (300px wide) -->
+        <aside id="sidebar" class="sidebar">
+            <div class="sidebar-header">
+                <div class="app-brand">
+                    <span class="brand-icon">📚</span>
+                    <span class="brand-title">Study Buddy</span>
+                </div>
+                <button id="sidebarCloseBtn" class="icon-btn mobile-only" title="Close Sidebar">
+                    <i class="fa-solid fa-xmark"></i>
+                </button>
+            </div>
+
+            <div class="sidebar-action">
+                <button id="newConversationBtn" class="btn btn-primary btn-block">
+                    <i class="fa-solid fa-plus"></i>
+                    <span>New Conversation</span>
+                </button>
+            </div>
+
+            <div class="sidebar-search">
+                <div class="search-input-wrapper">
+                    <i class="fa-solid fa-magnifying-glass search-icon"></i>
+                    <input type="text" id="conversationSearchInput" placeholder="Search conversations..." autocomplete="off">
+                    <button id="clearSearchBtn" class="clear-search-btn hidden" title="Clear search">
+                        <i class="fa-solid fa-xmark"></i>
+                    </button>
+                </div>
+            </div>
+
+            <div class="conversation-list-container">
+                <div class="conversation-list-header">
+                    <span>Recent Chats</span>
+                    <span id="conversationCountBadge" class="badge">0</span>
+                </div>
+                <div id="conversationList" class="conversation-list">
+                    <!-- Dynamic conversation items will be rendered here -->
+                </div>
+                <div id="noConversationsMsg" class="empty-list-placeholder hidden">
+                    <i class="fa-regular fa-comments"></i>
+                    <p>No conversations yet</p>
+                </div>
+            </div>
+
+            <div class="sidebar-footer">
+                <button id="sidebarSettingsBtn" class="footer-btn">
+                    <i class="fa-solid fa-gear"></i>
+                    <span>Settings</span>
+                </button>
+                <div class="provider-pill" id="currentProviderPill" title="Active Model Provider">
+                    <span class="status-indicator online"></span>
+                    <span id="sidebarProviderName">Provider</span>
+                </div>
+            </div>
+        </aside>
+
+        <!-- Main Content Area -->
+        <main class="main-content">
+            <!-- Top Bar -->
+            <header class="top-bar">
+                <div class="top-bar-left">
+                    <button id="sidebarToggleBtn" class="icon-btn" title="Toggle Sidebar">
+                        <i class="fa-solid fa-bars"></i>
+                    </button>
+                    <div class="title-container">
+                        <h1 id="activeConversationTitle" class="conversation-title" title="Click to rename">Study Buddy</h1>
+                        <input type="text" id="titleEditInput" class="title-edit-input hidden" maxlength="80">
+                        <button id="renameTitleBtn" class="icon-btn icon-btn-sm" title="Rename conversation">
+                            <i class="fa-solid fa-pencil"></i>
+                        </button>
+                    </div>
+                </div>
+
+                <div class="top-bar-right">
+                    <div id="activeFilesBadgeGroup" class="active-files-group hidden">
+                        <button id="viewFilesBtn" class="badge-btn" title="View attached documents">
+                            <i class="fa-solid fa-file-lines"></i>
+                            <span id="attachedFilesCount">0 Files</span>
+                        </button>
+                    </div>
+                    <button id="topBarSettingsBtn" class="icon-btn" title="Settings">
+                        <i class="fa-solid fa-gear"></i>
+                    </button>
+                </div>
+            </header>
+
+            <!-- Screen 1: Welcome Screen (when no conversation selected) -->
+            <section id="welcomeScreen" class="view-screen welcome-screen">
+                <div class="welcome-card">
+                    <div class="welcome-hero-icon">📚</div>
+                    <h2>Welcome to Study Buddy</h2>
+                    <p class="welcome-desc">
+                        Your intelligent AI-powered study assistant. Upload study materials, lecture notes, textbook chapters, or slides to ask questions, generate comprehensive study guides, and test yourself with custom question papers.
+                    </p>
+
+                    <div class="features-grid">
+                        <div class="feature-card">
+                            <i class="fa-solid fa-brain feature-icon"></i>
+                            <h3>RAG Knowledge Base</h3>
+                            <p>Upload PDFs, DOCX, TXT, or slides to query your notes with high factual accuracy.</p>
+                        </div>
+                        <div class="feature-card">
+                            <i class="fa-solid fa-file-pdf feature-icon"></i>
+                            <h3>Study Material PDF</h3>
+                            <p>Generate beautifully structured study guides complete with summaries and key concepts.</p>
+                        </div>
+                        <div class="feature-card">
+                            <i class="fa-solid fa-list-check feature-icon"></i>
+                            <h3>Question Papers</h3>
+                            <p>Create mock exam questions with difficulty levels and answer keys for effective practice.</p>
+                        </div>
+                    </div>
+
+                    <div class="welcome-actions">
+                        <button id="welcomeNewChatBtn" class="btn btn-primary btn-lg">
+                            <i class="fa-solid fa-plus"></i>
+                            <span>Create New Conversation</span>
+                        </button>
+                    </div>
+                </div>
+            </section>
+
+            <!-- Screen 2: File Upload / New Conversation Screen -->
+            <section id="uploadScreen" class="view-screen upload-screen hidden">
+                <div class="upload-container">
+                    <div class="upload-header">
+                        <h2>New Study Session</h2>
+                        <p>Upload your study materials (PDF, Word, Text, Markdown, PPTX) to start grounding your conversation.</p>
+                    </div>
+
+                    <div class="form-group">
+                        <label for="newConversationTitleInput" class="form-label">Conversation Title (Optional)</label>
+                        <input type="text" id="newConversationTitleInput" class="form-control" placeholder="e.g. Operating Systems - Unit 3" maxlength="100">
+                    </div>
+
+                    <div class="drop-zone" id="dropZone">
+                        <input type="file" id="fileInput" class="file-input" multiple accept=".pdf,.docx,.doc,.txt,.md,.pptx">
+                        <div class="drop-zone-content">
+                            <div class="drop-zone-icon">
+                                <i class="fa-solid fa-cloud-arrow-up"></i>
+                            </div>
+                            <h3>Drag &amp; Drop study files here</h3>
+                            <p class="drop-zone-subtitle">or click to browse from your computer</p>
+                            <button type="button" id="browseFilesBtn" class="btn btn-secondary">
+                                <i class="fa-solid fa-folder-open"></i> Browse Files
+                            </button>
+                            <div class="supported-formats">
+                                <span>Supported formats:</span>
+                                <span class="format-tag">PDF</span>
+                                <span class="format-tag">DOCX</span>
+                                <span class="format-tag">TXT</span>
+                                <span class="format-tag">MD</span>
+                                <span class="format-tag">PPTX</span>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Selected Files Queue -->
+                    <div id="selectedFilesSection" class="selected-files-section hidden">
+                        <div class="selected-files-header">
+                            <h4>Selected Files (<span id="selectedFilesCount">0</span>)</h4>
+                            <button id="clearAllFilesBtn" class="text-btn">Clear All</button>
+                        </div>
+                        <ul id="selectedFilesList" class="selected-files-list">
+                            <!-- Dynamically added files list -->
+                        </ul>
+                    </div>
+
+                    <div class="upload-actions">
+                        <button id="cancelUploadBtn" class="btn btn-secondary">Cancel</button>
+                        <button id="startConversationBtn" class="btn btn-primary" disabled>
+                            <i class="fa-solid fa-comments"></i>
+                            <span>Start Conversation</span>
+                        </button>
+                    </div>
+                </div>
+            </section>
+
+            <!-- Screen 3: Active Chat Area -->
+            <section id="chatScreen" class="view-screen chat-screen hidden">
+                <!-- Messages Container -->
+                <div id="messagesContainer" class="messages-container">
+                    <div id="chatMessages" class="chat-messages">
+                        <!-- Messages dynamically rendered here -->
+                    </div>
+
+                    <!-- Typing Indicator -->
+                    <div id="typingIndicator" class="typing-indicator hidden">
+                        <div class="assistant-avatar">
+                            <i class="fa-solid fa-robot"></i>
+                        </div>
+                        <div class="typing-bubble">
+                            <span class="dot"></span>
+                            <span class="dot"></span>
+                            <span class="dot"></span>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Feature Buttons Bar -->
+                <div class="features-bar">
+                    <span class="features-bar-label"><i class="fa-solid fa-wand-magic-sparkles"></i> AI Tools:</span>
+                    <button id="studyMaterialBtn" class="feature-action-btn" title="Generate comprehensive Study Material PDF">
+                        <i class="fa-solid fa-book-open"></i>
+                        <span>Study Material PDF</span>
+                    </button>
+                    <button id="questionPaperBtn" class="feature-action-btn" title="Generate custom Question Paper PDF">
+                        <i class="fa-solid fa-pen-to-square"></i>
+                        <span>Question Paper</span>
+                    </button>
+                    <button id="generatedFilesBtn" class="feature-action-btn secondary" title="View previously generated PDFs">
+                        <i class="fa-solid fa-folder-arrow-down"></i>
+                        <span>Generated Files</span>
+                    </button>
+                </div>
+
+                <!-- Chat Input Area -->
+                <div class="chat-input-container">
+                    <div class="chat-input-box">
+                        <button id="attachMoreFilesBtn" class="icon-btn chat-tool-btn" title="Attach more files to this session">
+                            <i class="fa-solid fa-plus"></i>
+                        </button>
+                        <input type="file" id="attachMoreFileInput" class="file-input hidden" multiple accept=".pdf,.docx,.doc,.txt,.md,.pptx">
+
+                        <textarea 
+                            id="chatTextarea" 
+                            class="chat-textarea" 
+                            rows="1" 
+                            placeholder="Ask a question about your study documents..."
+                            autocomplete="off"
+                        ></textarea>
+
+                        <button id="sendChatBtn" class="icon-btn send-btn" title="Send message" disabled>
+                            <i class="fa-solid fa-paper-plane"></i>
+                        </button>
+                    </div>
+                    <div class="chat-footnote">
+                        <span>Study Buddy uses grounded RAG from your uploaded documents. Check important notes for accuracy.</span>
+                    </div>
+                </div>
+            </section>
+        </main>
+    </div>
+
+    <!-- MODAL 1: First-Time Setup Modal -->
+    <div id="setupModal" class="modal-backdrop">
+        <div class="modal-dialog">
+            <div class="modal-header">
+                <div class="modal-title-group">
+                    <span class="modal-icon">⚙️</span>
+                    <h3>Welcome to Study Buddy Setup</h3>
+                </div>
+            </div>
+            <div class="modal-body">
+                <p class="modal-description">
+                    To start using Study Buddy, please select your AI model provider and provide the required credentials. Your keys are stored locally.
+                </p>
+
+                <form id="setupForm" onsubmit="return false;">
+                    <div class="form-group">
+                        <label for="setupProviderSelect" class="form-label">AI Provider</label>
+                        <select id="setupProviderSelect" class="form-control form-select">
+                            <option value="gemini">Google Gemini (Recommended)</option>
+                            <option value="openai">OpenAI (GPT-4o / GPT-4o-mini)</option>
+                            <option value="claude">Anthropic Claude (Claude 3.5 Sonnet)</option>
+                            <option value="ollama">Ollama (Local LLM)</option>
+                            <option value="llamacpp">LlamaCpp (Local GGUF Model)</option>
+                        </select>
+                    </div>
+
+                    <!-- API Key (for Cloud Providers) -->
+                    <div id="setupApiKeyGroup" class="form-group">
+                        <label for="setupApiKeyInput" class="form-label">API Key</label>
+                        <div class="input-password-wrapper">
+                            <input type="password" id="setupApiKeyInput" class="form-control" placeholder="Enter your API key">
+                            <button type="button" class="toggle-password-btn" data-target="setupApiKeyInput">
+                                <i class="fa-solid fa-eye"></i>
+                            </button>
+                        </div>
+                        <small class="form-help" id="setupApiKeyHelp">Key is kept locally on your server</small>
+                    </div>
+
+                    <!-- Ollama Specific Fields -->
+                    <div id="setupOllamaGroup" class="form-group-subset hidden">
+                        <div class="form-group">
+                            <label for="setupOllamaBaseUrl" class="form-label">Ollama Base URL</label>
+                            <input type="text" id="setupOllamaBaseUrl" class="form-control" value="http://localhost:11434" placeholder="http://localhost:11434">
+                        </div>
+                        <div class="form-group">
+                            <label for="setupOllamaModelName" class="form-label">Model Name</label>
+                            <input type="text" id="setupOllamaModelName" class="form-control" placeholder="e.g. llama3.2, mistral, deepseek-r1">
+                        </div>
+                    </div>
+
+                    <!-- LlamaCpp Specific Fields -->
+                    <div id="setupLlamaCppGroup" class="form-group-subset hidden">
+                        <div class="form-group">
+                            <label for="setupLlamaModelPath" class="form-label">GGUF Model Path or Server URL</label>
+                            <input type="text" id="setupLlamaModelPath" class="form-control" placeholder="e.g. C:\models\llama-3.2-3b.gguf or http://localhost:8080">
+                            <small class="form-help">Enter the full path to a local .gguf file or the URL of a running llama.cpp server</small>
+                        </div>
+                    </div>
+                </form>
+            </div>
+            <div class="modal-footer">
+                <button type="button" id="saveSetupBtn" class="btn btn-primary btn-block">
+                    <i class="fa-solid fa-check"></i> Save &amp; Continue
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <!-- MODAL 2: Settings Modal -->
+    <div id="settingsModal" class="modal-backdrop hidden">
+        <div class="modal-dialog">
+            <div class="modal-header">
+                <div class="modal-title-group">
+                    <i class="fa-solid fa-sliders modal-icon-small"></i>
+                    <h3>Application Settings</h3>
+                </div>
+                <button id="closeSettingsBtn" class="icon-btn modal-close-btn" title="Close">
+                    <i class="fa-solid fa-xmark"></i>
+                </button>
+            </div>
+            <div class="modal-body">
+                <div class="current-status-banner">
+                    <span class="status-indicator online"></span>
+                    <span>Current Active Provider: <strong id="settingsActiveProviderLabel">None</strong></span>
+                </div>
+
+                <form id="settingsForm" onsubmit="return false;">
+                    <div class="form-group">
+                        <label for="settingsProviderSelect" class="form-label">Change Provider</label>
+                        <select id="settingsProviderSelect" class="form-control form-select">
+                            <option value="gemini">Google Gemini</option>
+                            <option value="openai">OpenAI</option>
+                            <option value="claude">Anthropic Claude</option>
+                            <option value="ollama">Ollama (Local LLM)</option>
+                            <option value="llamacpp">LlamaCpp (Local GGUF)</option>
+                        </select>
+                    </div>
+
+                    <!-- API Key Field -->
+                    <div id="settingsApiKeyGroup" class="form-group">
+                        <label for="settingsApiKeyInput" class="form-label">API Key</label>
+                        <div class="input-password-wrapper">
+                            <input type="password" id="settingsApiKeyInput" class="form-control" placeholder="Enter new API key or leave blank to keep current">
+                            <button type="button" class="toggle-password-btn" data-target="settingsApiKeyInput">
+                                <i class="fa-solid fa-eye"></i>
+                            </button>
+                        </div>
+                        <small class="form-help">Leave blank to keep existing configured key</small>
+                    </div>
+
+                    <!-- Ollama Specific Fields -->
+                    <div id="settingsOllamaGroup" class="form-group-subset hidden">
+                        <div class="form-group">
+                            <label for="settingsOllamaBaseUrl" class="form-label">Ollama Base URL</label>
+                            <input type="text" id="settingsOllamaBaseUrl" class="form-control" placeholder="http://localhost:11434">
+                        </div>
+                        <div class="form-group">
+                            <label for="settingsOllamaModelName" class="form-label">Model Name</label>
+                            <input type="text" id="settingsOllamaModelName" class="form-control" placeholder="e.g. llama3.2">
+                        </div>
+                    </div>
+
+                    <!-- LlamaCpp Specific Fields -->
+                    <div id="settingsLlamaCppGroup" class="form-group-subset hidden">
+                        <div class="form-group">
+                            <label for="settingsLlamaModelPath" class="form-label">GGUF Model Path or Server URL</label>
+                            <input type="text" id="settingsLlamaModelPath" class="form-control" placeholder="e.g. C:\models\llama-3.2-3b.gguf or http://localhost:8080">
+                            <small class="form-help">Enter the full path to a local .gguf file or the URL of a running llama.cpp server</small>
+                        </div>
+                    </div>
+                </form>
+            </div>
+            <div class="modal-footer">
+                <button type="button" id="cancelSettingsBtn" class="btn btn-secondary">Cancel</button>
+                <button type="button" id="saveSettingsBtn" class="btn btn-primary">
+                    <i class="fa-solid fa-floppy-disk"></i> Save Settings
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <!-- MODAL 3: Feature Generator Modal (Study Material / Question Paper) -->
+    <div id="featureModal" class="modal-backdrop hidden">
+        <div class="modal-dialog">
+            <div class="modal-header">
+                <div class="modal-title-group">
+                    <i id="featureModalIcon" class="fa-solid fa-book-open modal-icon-small"></i>
+                    <h3 id="featureModalTitle">Generate Study Material PDF</h3>
+                </div>
+                <button id="closeFeatureModalBtn" class="icon-btn modal-close-btn" title="Close">
+                    <i class="fa-solid fa-xmark"></i>
+                </button>
+            </div>
+            <div class="modal-body">
+                <p id="featureModalSubtitle" class="modal-description">
+                    Generate structured study material from the documents in this conversation.
+                </p>
+
+                <form id="featureForm" onsubmit="return false;">
+                    <div class="form-group">
+                        <label for="featureTopicsInput" class="form-label">Specific Topics / Chapters (Optional)</label>
+                        <textarea id="featureTopicsInput" class="form-control" rows="3" placeholder="Leave blank to cover all documents, or specify key topics (e.g. Process Scheduling, Deadlocks, Memory Management)"></textarea>
+                        <small class="form-help">Optionally focus the output on particular topics or concepts</small>
+                    </div>
+
+                    <div class="form-group">
+                        <label for="featureOutputDirInput" class="form-label">Save Directory (Folder Path)</label>
+                        <div class="input-dir-wrapper">
+                            <input type="text" id="featureOutputDirInput" class="form-control" placeholder="e.g. C:\Users\Username\Documents\StudyBuddy">
+                            <button type="button" id="resetDefaultDirBtn" class="btn btn-sm btn-secondary" title="Reset to default Documents/Downloads directory">
+                                Default
+                            </button>
+                        </div>
+                        <small class="form-help">Enter folder where the generated PDF will be saved</small>
+                    </div>
+
+                    <!-- Progress Bar (shown when generating) -->
+                    <div id="featureProgressContainer" class="progress-box hidden">
+                        <div class="progress-label">
+                            <span id="featureProgressMessage">Generating PDF...</span>
+                            <span id="featureProgressPercent">0%</span>
+                        </div>
+                        <div class="progress-track">
+                            <div id="featureProgressBar" class="progress-fill" style="width: 0%;"></div>
+                        </div>
+                    </div>
+                </form>
+            </div>
+            <div class="modal-footer">
+                <button type="button" id="cancelFeatureBtn" class="btn btn-secondary">Cancel</button>
+                <button type="button" id="submitFeatureBtn" class="btn btn-primary">
+                    <i class="fa-solid fa-gear fa-spin hidden" id="featureLoadingSpinner"></i>
+                    <span id="submitFeatureBtnText">Generate PDF</span>
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <!-- MODAL 4: Attached Files Modal -->
+    <div id="filesModal" class="modal-backdrop hidden">
+        <div class="modal-dialog">
+            <div class="modal-header">
+                <div class="modal-title-group">
+                    <i class="fa-solid fa-folder-open modal-icon-small"></i>
+                    <h3>Session Documents</h3>
+                </div>
+                <button id="closeFilesModalBtn" class="icon-btn modal-close-btn" title="Close">
+                    <i class="fa-solid fa-xmark"></i>
+                </button>
+            </div>
+            <div class="modal-body">
+                <div id="attachedFilesListContainer" class="attached-files-container">
+                    <ul id="activeFilesList" class="active-files-list">
+                        <!-- Rendered dynamically -->
+                    </ul>
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button type="button" id="modalAttachMoreBtn" class="btn btn-primary">
+                    <i class="fa-solid fa-plus"></i> Attach More Documents
+                </button>
+                <button type="button" id="closeFilesModalBottomBtn" class="btn btn-secondary">Close</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- MODAL 5: Generated Files List Modal -->
+    <div id="generatedFilesModal" class="modal-backdrop hidden">
+        <div class="modal-dialog">
+            <div class="modal-header">
+                <div class="modal-title-group">
+                    <i class="fa-solid fa-file-pdf modal-icon-small"></i>
+                    <h3>Generated Files</h3>
+                </div>
+                <button id="closeGeneratedFilesModalBtn" class="icon-btn modal-close-btn" title="Close">
+                    <i class="fa-solid fa-xmark"></i>
+                </button>
+            </div>
+            <div class="modal-body">
+                <div id="generatedFilesListContainer" class="attached-files-container">
+                    <ul id="generatedFilesList" class="active-files-list">
+                        <!-- Rendered dynamically -->
+                    </ul>
+                </div>
+                <div id="noGeneratedFilesMsg" class="empty-list-placeholder hidden">
+                    <i class="fa-regular fa-folder-open"></i>
+                    <p>No PDFs generated for this conversation yet</p>
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button type="button" id="closeGeneratedFilesModalBottomBtn" class="btn btn-secondary">Close</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Toast Notifications Container -->
+    <div id="toastContainer" class="toast-container" aria-live="polite"></div>
+
+    <!-- External Libraries -->
+    <!-- Socket.IO Client -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/socket.io/4.7.2/socket.io.min.js"></script>
+    <!-- Marked.js for Markdown -->
+    <script src="https://cdn.jsdelivr.net/npm/marked/marked.min.js"></script>
+    <!-- Highlight.js for Syntax Highlighting -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.8.0/highlight.min.js"></script>
+    <!-- Application JS -->
+    <script src="/static/js/app.js"></script>
+</body>
+</html>

@@ -1,0 +1,32 @@
+# Byte-compiled / optimized / DLL files
+__pycache__/
+*.py[cod]
+*$py.class
+
+# Executables & build output
+*.exe
+build/
+dist/
+*.spec
+
+# Virtual environments
+venv/
+env/
+.venv/
+test_studybuddy_venv/
+
+# Local databases, vector stores, and uploads
+*.db
+*.sqlite
+*.sqlite3
+*.log
+.studybuddy/
+
+# IDE / Editor
+.vscode/
+.idea/
+
+# OS generated
+Thumbs.db
+Desktop.ini
+.DS_Store
